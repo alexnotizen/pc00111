@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BÀI 11 – NGỮ PHÁP - Flashcard</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; font-family:Arial,"Microsoft YaHei",sans-serif;
+  background:#fdfbf7;
+  display:flex; justify-content:center; color:#202124;
+}
+.app{width:min(860px,96vw); padding:30px 0 40px}
+h1{text-align:center;margin:0 0 15px;font-size:38.4px; font-weight: bold;}
+.progress{text-align:center;font-size:21.6px;color:#444;margin-bottom:20px; font-weight: bold;}
+.card-wrap{perspective:1200px; cursor:pointer}
+.card{
+  width:100%; height:592px; position:relative; transform-style:preserve-3d;
+  transition:transform .55s ease;
+}
+.card.flipped{transform:rotateY(180deg)}
+.face{
+  position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  border-radius:24px; background:white; box-shadow:0 15px 45px rgba(0,0,0,.15);
+  display:flex; flex-direction:column; padding:36px; border:3px solid #eee; overflow-y:auto;
+}
+.front{justify-content:flex-start; align-items:flex-start; text-align:left}
+.back{transform:rotateY(180deg); text-align:left; align-items:flex-start; justify-content:flex-start; padding-top:40px;}
+
+.hl{color: #7c2d12; font-weight: bold; background-color: #fef08a; padding: 2px 6px; border-radius: 4px; border: 1px solid #eab308;}
+.hl-blue { color: #ffffff; font-weight: bold; background-color: #2563eb; padding: 2px 6px; border-radius: 4px; }
+.hl-red { color: #dc2626; font-weight: bold; }
+
+/* Pinyin mặt trước: căn giữa */
+.pinyin{
+  font-size:1.68em;
+  color:#666666;
+  margin-bottom:10px;
+  font-weight:bold;
+  text-align:center;
+  width:100%;
+}
+
+.zh-front { font-size: 2.16em; font-weight: bold; margin-bottom: 6px; line-height: 1.3; color: #dc2626; text-align: center; width: 100%; }
+
+/* Mặt sau */
+.zh-back { color: #2563eb; font-weight: bold; font-size: 1.74em; line-height: 1.2; display: block; margin-top: 12px; margin-bottom: 2px; }
+.pinyin-back { color: #666666; font-weight: bold; font-size: 1.2em; display: block; margin: 2px 0; }
+.vi-back { font-size: 1.2em; color: #333; display: block; margin-bottom: 12px; }
+
+.desc-front { font-size: 1.38em; color: #333; margin: 8px 0; text-align: left; width: 100%; line-height: 1.4; }
+.desc{font-size: 1.38em; color: #333; margin: 0; text-align: left; width: 100%; line-height: 1.4;}
+
+.controls{display:flex;gap:20px;justify-content:center;margin-top:30px}
+button{
+  border:0;border-radius:20px;padding:20px 35px;font-size:26.4px;
+  cursor:pointer;background:#e9eef7;color:#233044; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,.1);
+}
+button.primary{background:#2563eb;color:white}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <h1 id="title">BÀI 11 – NGỮ PHÁP</h1>
+  <div class="progress" id="progress"></div>
+
+  <div class="card-wrap" id="cardWrap" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="face front" id="frontFace"></div>
+      <div class="face back" id="backFace"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="event.stopPropagation();prevCard()">← TRƯỚC</button>
+    <button class="primary" onclick="event.stopPropagation();flipCard()">LẬT THẺ</button>
+    <button onclick="event.stopPropagation();nextCard()">TIẾP →</button>
+  </div>
+</div>
+
+<script>
+const cards = [
+  {
+    f: "<div class='zh-front'>TRỢ TỪ 的 (DE)</div>" +
+       "<div class='desc-front'>" +
+       "Khi thêm trợ từ <b>的</b> vào sau danh từ, đại từ nhân xưng hoặc tính từ, ta tạo thành một cụm từ có chức năng như một danh từ.<br>" +
+       "Cấu trúc này giúp lược bỏ danh từ chính khi ngữ cảnh đã rõ ràng, tránh lặp từ.<br><br>" +
+       "• <b>Cách dùng:</b><br>" +
+       "- <b>Với sở hữu:</b> Đại từ/Danh từ chỉ người + 的 = Của ai đó.<br>" +
+       "- <b>Với tính từ mô tả:</b> Tính từ + 的 = Cái có tính chất đó." +
+       "</div>",
+    b: "<div class='desc'>" +
+       "<span class='zh-back'>这本书是西蒙的。</span><span class='pinyin-back'>Zhè běn shū shì Xīméng de.</span><span class='vi-back'>(Quyển sách này là của Simon.) Hiểu ngầm là \"sách của Simon\".</span>" +
+       "<span class='zh-back'>A: 这本书是你的吗？</span><span class='pinyin-back'>Zhè běn shū shì nǐ de ma?</span><span class='vi-back'>(Quyển sách này là của bạn à?)</span>" +
+       "<span class='zh-back'>B: 不是，我的在桌子上边。</span><span class='pinyin-back'>Bú shì, wǒ de zài zhuōzi shàngbian.</span><span class='vi-back'>(Không, của tôi ở trên bàn.)</span>" +
+       "<span class='zh-back'>大的三块钱一斤。</span><span class='pinyin-back'>Dà de sān kuài qián yì jīn.</span><span class='vi-back'>(Loại to giá 3 tệ một cân.) - Hiểu ngầm là \"quýt loại to\".</span>" +
+       "<span class='zh-back'>要红的还是要蓝的？</span><span class='pinyin-back'>Yào hóng de háishì yào lán de?</span><span class='vi-back'>(Muốn cái đỏ hay cái xanh?)</span>" +
+       "<span class='zh-back'>A: 我要大的。</span><span class='pinyin-back'>Wǒ yào dà de.</span><span class='vi-back'>(Tôi muốn cái to.)</span>" +
+       "<span class='zh-back'>A: 我要凉的。</span><span class='pinyin-back'>Wǒ yào liáng de.</span><span class='vi-back'>(Tôi muốn cái mát.)</span>" +
+       "<span class='zh-back'>A: 我要短的。</span><span class='pinyin-back'>Wǒ yào duǎn de.</span><span class='vi-back'>(Tôi muốn cái ngắn.)</span>" +
+       "<span class='zh-back'>这些是我家的，那些是我学校的。</span><span class='pinyin-back'>Zhèxiē shì wǒ jiā de, nàxiē shì wǒ xuéxiào de.</span><span class='vi-back'>(Những cái này là của nhà tôi, những cái kia là của trường tôi.)</span>" +
+       "<span class='zh-back'>这些是我买的，那些是我妈妈买的。</span><span class='pinyin-back'>Zhèxiē shì wǒ mǎi de, nàxiē shì wǒ māma mǎi de.</span><span class='vi-back'>(Những cái này là tôi mua, những cái kia là mẹ tôi mua.)</span>" +
+       "<span class='zh-back'>你看，他穿的真好看！</span><span class='pinyin-back'>Nǐ kàn, tā chuān de zhēn hǎokàn!</span><span class='vi-back'>(Bạn xem, quần áo anh ta mặc đẹp quá!)</span>" +
+       "<span class='zh-back'>他的房间不大，我的大。</span><span class='pinyin-back'>Tā de fángjiān bú dà, wǒ de dà.</span><span class='vi-back'>(Phòng anh ta không lớn, phòng tôi lớn.)</span>" +
+       "</div>"
+  },
+  {
+    f: "<div class='zh-front'>A HAY B (A 还是 B?)</div>" +
+       "<div class='desc-front'>" +
+       "Sử dụng liên từ <b>还是 (háishì)</b> để nối hai phương án, buộc người nghe phải chọn một trong hai. Đây là dạng câu hỏi nghi vấn lựa chọn.<br><br>" +
+       "• <b>Cấu trúc:</b><br>" +
+       "Phương án A + 还是 + Phương án B?" +
+       "</div>",
+    b: "<div class='desc'>" +
+       "<span class='zh-back'>要红的还是要蓝的？</span><span class='pinyin-back'>Yào hóng de háishì yào lán de?</span><span class='vi-back'>(Muốn màu đỏ hay màu xanh?)</span>" +
+       "<span class='zh-back'>我要红的。</span><span class='pinyin-back'>Wǒ yào hóng de.</span><span class='vi-back'>(Tôi muốn màu đỏ.)</span>" +
+       "<span class='zh-back'>A: 这是铅笔还是圆珠笔？</span><span class='pinyin-back'>Zhè shì qiānbǐ háishì yuánzhūbǐ?</span><span class='vi-back'>(Đây là bút chì hay bút bi?)</span>" +
+       "<span class='zh-back'>B: 这是铅笔。</span><span class='pinyin-back'>Zhè shì qiānbǐ.</span><span class='vi-back'>(Đây là bút chì.)</span>" +
+       "<span class='zh-back'>A: 这是你妹妹还是你姐姐？</span><span class='pinyin-back'>Zhè shì nǐ mèimei háishì nǐ jiějie?</span><span class='vi-back'>(Đây là em gái bạn hay chị gái bạn?)</span>" +
+       "<span class='zh-back'>B: 这是我妹妹。</span><span class='pinyin-back'>Zhè shì wǒ mèimei.</span><span class='vi-back'>(Đây là em gái tôi.)</span>" +
+       "<span class='zh-back'>A: 你回家还是去商店？</span><span class='pinyin-back'>Nǐ huí jiā háishì qù shāngdiàn?</span><span class='vi-back'>(Bạn về nhà hay đi cửa hàng?)</span>" +
+       "<span class='zh-back'>B: 我回家。</span><span class='pinyin-back'>Wǒ huí jiā.</span><span class='vi-back'>(Tôi về nhà.)</span>" +
+       "<span class='zh-back'>A: 你下午去图书馆还是晚上去？</span><span class='pinyin-back'>Nǐ xiàwǔ qù túshūguǎn háishì wǎnshang qù?</span><span class='vi-back'>(Bạn đi thư viện buổi chiều hay buổi tối?)</span>" +
+       "<span class='zh-back'>B: 我晚上去。</span><span class='pinyin-back'>Wǒ wǎnshang qù.</span><span class='vi-back'>(Tôi đi buổi tối.)</span>" +
+       "<span class='zh-back'>A: 这是你的书还是他的？</span><span class='pinyin-back'>Zhè shì nǐ de shū háishì tā de?</span><span class='vi-back'>(Đây là sách của bạn hay của anh ấy?)</span>" +
+       "<span class='zh-back'>B: 这是他的书。</span><span class='pinyin-back'>Zhè shì tā de shū.</span><span class='vi-back'>(Đây là sách của anh ấy.)</span>" +
+       "<span class='zh-back'>A: 你是日本人还是韩国人？</span><span class='pinyin-back'>Nǐ shì Rìběnrén háishì Hánguórén?</span><span class='vi-back'>(Bạn là người Nhật hay người Hàn?)</span>" +
+       "<span class='zh-back'>B: 我是日本人。</span><span class='pinyin-back'>Wǒ shì Rìběnrén.</span><span class='vi-back'>(Tôi là người Nhật.)</span>" +
+       "</div>"
+  },
+  {
+    f: "<div class='zh-front'>CÁCH ĐỌC SỐ TIỀN</div>" +
+       "<div class='desc-front'>" +
+       "Tiền Trung Quốc gọi là Nhân dân tệ. Khi nói giá tiền thì nói sự vật trực tiếp với giá tiền, không cần động từ.<br>" +
+       "Đơn vị tiền tệ từ lớn đến nhỏ là:<br>" +
+       "• 元 (yuán, đồng)<br>• 角 (jiǎo, hào)<br>• 分 (fēn, xu)<br><br>" +
+       "<b>Trong giao tiếp hằng ngày:</b><br>" +
+       "- 元 (yuán) thường nói là 块 (kuài)<br>" +
+       "- 角 (jiǎo) thường nói là 毛 (máo)<br><br>" +
+       "<b>Lưu ý cách đọc:</b><br>" +
+       "• Nếu ở giữa có số 0 thì đọc là 零 (líng).<br>" +
+       "• <b>Lưu ý đặc biệt với số 2:</b> Khi số 2 đứng đầu hoặc đứng một mình trong cụm số đếm tiền, đọc là 两 (liǎng)." +
+       "</div>",
+    b: "<div class='desc'>" +
+       "<span class='zh-back'>1.02 = 一块零二分</span><span class='pinyin-back'>yī kuài líng èr fēn</span>" +
+       "<span class='zh-back'>10.58 元 → 十块五角八 / 十块五毛八</span><span class='pinyin-back'>shí kuài wǔ jiǎo bā / shí kuài wǔ máo bā</span>" +
+       "<span class='zh-back'>10.09 元 → 十块零九分</span><span class='pinyin-back'>shí kuài líng jiǔ fēn</span>" +
+       "<span class='zh-back'>2.00 元 → 两块</span><span class='pinyin-back'>Liǎng kuài</span>" +
+       "<span class='zh-back'>0.20 元 → 两毛</span><span class='pinyin-back'>Liǎng máo</span>" +
+       "<span class='zh-back'>0.02 元 → 两分</span><span class='pinyin-back'>Liǎng fēn</span>" +
+       "<span class='zh-back'>200 đồng: 二百 / 两百</span><span class='pinyin-back'>èrbǎi / liǎngbǎi</span><span class='vi-back' style='margin-bottom:15px;'></span>" +
+       "<span class='zh-back'>两杯咖啡九块二毛</span><span class='pinyin-back'>Liǎng bēi kāfēi jiǔ kuài èr máo</span><span class='vi-back'>(Hai cốc cà phê giá 9 đồng 2 hào)</span>" +
+       "<span class='zh-back'>两个人买二百九十九本书。他们很累。二百九十九本书五百一十五块九角。</span><span class='pinyin-back'>Liǎng gè rén mǎi èrbǎi jiǔshíjiǔ běn shū. Tāmen hěn lèi. Èrbǎi jiǔshíjiǔ běn shū wǔbǎi yīshíwǔ kuài jiǔ jiǎo.</span><span class='vi-back'>(Hai người mua 299 cuốn sách. Họ rất mệt. 299 cuốn sách giá 515 đồng 9 hào.)</span>" +
+       "<span class='zh-back'>我在那个超市买了两个包子。两个包子十五块三分。</span><span class='pinyin-back'>Wǒ zài nàge chāoshì mǎi le liǎng gè bāozi. Liǎng gè bāozi shíwǔ kuài sān fēn.</span><span class='vi-back'>(Tôi mua hai cái bánh bao ở siêu thị đó. Hai cái bánh bao giá 15 đồng 3 xu.)</span>" +
+       "<span class='zh-back'>我爸爸吃了二百一十三个水饺。二百一十三个水饺三百二十一块二分。</span><span class='pinyin-back'>Wǒ bàba chī le èrbǎi yīshísān gè shuǐjiǎo. Èrbǎi yīshísān gè shuǐjiǎo sānbǎi èrshíyī kuài èr fēn.</span><span class='vi-back'>(Bố tôi ăn 213 cái sủi cảo. 213 cái sủi cảo giá 321 đồng 2 xu.)</span>" +
+       "<span class='zh-back'>两个妹妹喝了两杯牛奶。两杯牛奶八块二毛二分。</span><span class='pinyin-back'>Liǎng gè mèimei hē le liǎng bēi niúnǎi. Liǎng bēi niúnǎi bā kuài èr máo èr fēn.</span><span class='vi-back'>(Hai cô em gái uống hai cốc sữa. Hai cốc sữa giá 8 đồng 2 hào 2 xu.)</span>" +
+       "<span class='zh-back'>两个人吃了十二个苹果。十二个苹果十七块二。</span><span class='pinyin-back'>Liǎng gè rén chī le shí'èr gè píngguǒ. Shí'èr gè píngguǒ shíqī kuài èr.</span><span class='vi-back'>(Hai người ăn mười hai quả táo. Mười hai quả táo giá 17 đồng 2.)</span>" +
+       "<span class='zh-back'>我买了一个电脑。价格七百五十一块二角。</span><span class='pinyin-back'>Wǒ mǎi le yí gè diànnǎo. Jiàgé qībǎi wǔshíyī kuài èr jiǎo.</span><span class='vi-back'>(Tôi mua một cái máy tính. Giá 751 đồng 2 hào.)</span>" +
+       "<span class='zh-back'>他想吃。他来到前边的商店买面条。面条一百一十五块二分。</span><span class='pinyin-back'>Tā xiǎng chī. Tā lái dào qiánbian de shāngdiàn mǎi miàntiáo. Miàntiáo yìbǎi yīshíwǔ kuài èr fēn.</span><span class='vi-back'>(Anh ta muốn ăn. Anh ta đến cửa hàng phía trước mua mì. Mì 115 đồng 2 xu.)</span>" +
+       "<span class='zh-back'>我出去买了两斤苹果。苹果很便宜。六十块钱一斤。</span><span class='pinyin-back'>Wǒ chūqù mǎi le liǎng jīn píngguǒ. Píngguǒ hěn piányi. Liùshí kuài qián yì jīn.</span><span class='vi-back'>(Tôi ra ngoài mua hai cân táo. Táo rất rẻ. 60 đồng một cân.)</span>" +
+       "<span class='zh-back'>他穿的衣服很贵。八百一十八块钱一件。</span><span class='pinyin-back'>Tā chuān de yīfu hěn guì. Bābǎi yīshíbā kuài qián yí jiàn.</span><span class='vi-back'>(Áo anh ta mặc rất đắt. 818 đồng một chiếc.)</span>" +
+       "<span class='zh-back'>那边卖杯子。杯子很贵。五百五十五块二分一个。</span><span class='pinyin-back'>Nàbiān mài bēizi. Bēizi hěn guì. Wǔbǎi wǔshíwǔ kuài èr fēn yí gè.</span><span class='vi-back'>(Đằng kia bán cốc. Cốc rất đắt. 555 đồng 2 xu một cái.)</span>" +
+       "<span class='zh-back'>这是我的新电视。这个电视二百一十二块钱。</span><span class='pinyin-back'>Zhè shì wǒ de xīn diànshì. Zhège diànshì èrbǎi yīshí'èr kuài qián.</span><span class='vi-back'>(Đây là ti vi mới của tôi. Ti vi này 212 đồng.)</span>" +
+       "<span class='zh-back'>我不忙。我读了一百零一本书。书很便宜。一百零一本书二百零二块二毛。</span><span class='pinyin-back'>Wǒ bù máng. Wǒ dú le yìbǎi líng yī běn shū. Shū hěn piányi. Yìbǎi líng yī běn shū èrbǎi líng èr kuài èr máo.</span><span class='vi-back'>(Tôi không bận. Tôi đọc 101 cuốn sách. Sách rất rẻ. 101 cuốn giá 202 đồng 2 hào.)</span>" +
+       "<span class='zh-back'>这些五块钱一个，那些十块钱一个。</span><span class='pinyin-back'>Zhèxiē wǔ kuài qián yí gè, nàxiē shí kuài qián yí gè.</span><span class='vi-back'>(Những cái này năm tệ một cái, những cái kia mười tệ một cái.)</span>" +
+       "</div>"
+  }
+];
+
+let idx = 0;
+
+function render() {
+  document.getElementById('frontFace').innerHTML = cards[idx].f;
+  document.getElementById('backFace').innerHTML = cards[idx].b;
+  document.getElementById('progress').innerText = `Thẻ ${idx + 1} / ${cards.length}`;
+}
+
+function flipCard() {
+  document.getElementById('card').classList.toggle('flipped');
+}
+
+function nextCard() {
+  idx = (idx + 1) % cards.length;
+  document.getElementById('card').classList.remove('flipped');
+  render();
+}
+
+function prevCard() {
+  idx = (idx - 1 + cards.length) % cards.length;
+  document.getElementById('card').classList.remove('flipped');
+  render();
+}
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    nextCard();
+    event.preventDefault();
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    prevCard();
+    event.preventDefault();
+  } else if (event.key === ' ' || event.key === 'Enter') {
+    flipCard();
+    event.preventDefault();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
